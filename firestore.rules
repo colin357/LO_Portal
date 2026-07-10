@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isLO() {
+      return signedIn() && myDoc().role == 'lo';
+    }
+
+    // A user's own doc, plus:
+    //  - agents can read their loan officer's doc (name shown on the videos page)
+    //  - loan officers can read/list the agents linked to them
+    match /users/{userId} {
+      allow read: if signedIn() && (
+        request.auth.uid == userId ||
+        resource.data.loId == request.auth.uid ||
+        myDoc().loId == userId
+      );
+
+      // Signup: an agent may create their own doc, but only as role 'agent'
+      // and only pointing at a real referral code they used.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == 'agent'
+        && get(/databases/$(database)/documents/referralCodes/$(request.resource.data.referralCode)).data.loId
+             == request.resource.data.loId;
+
+      // Users can update their own profile but never change role or loId.
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.get('loId', '') == resource.data.get('loId', '');
+    }
+
+    // Public read so the signup page can validate a code before the account exists.
+    // Only a loan officer can claim a code, and only for themselves.
+    match /referralCodes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isLO()
+        && request.resource.data.loId == request.auth.uid
+        && (resource == null || resource.data.loId == request.auth.uid);
+    }
+
+    match /videos/{videoId} {
+      allow read: if signedIn() &&
+        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId);
+      allow create: if isLO() && request.resource.data.loId == request.auth.uid;
+      allow update, delete: if isLO() && resource.data.loId == request.auth.uid;
+    }
+
+    match /templates/{templateId} {
+      allow read: if signedIn() &&
+        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId);
+      allow create: if isLO() && request.resource.data.loId == request.auth.uid;
+      allow update, delete: if isLO() && resource.data.loId == request.auth.uid;
+    }
+  }
+}
