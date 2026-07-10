@@ -6,6 +6,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useAuth } from '../context/AuthContext'
+import TemplateDesigner from '../components/TemplateDesigner'
 
 const TABS = ['Videos', 'Templates', 'Agents', 'Referral Code']
 
@@ -96,6 +97,7 @@ function AdminVideos() {
 function AdminTemplates() {
   const { user } = useAuth()
   const [templates, setTemplates] = useState([])
+  const [mode, setMode] = useState('design')
   const [form, setForm] = useState({ title: '', description: '', weekOf: '' })
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -150,8 +152,20 @@ function AdminTemplates() {
 
   return (
     <div>
+      <div className="tabs">
+        <button className={mode === 'design' ? 'tab active' : 'tab'} onClick={() => setMode('design')}>
+          Smart template (auto-personalized)
+        </button>
+        <button className={mode === 'file' ? 'tab active' : 'tab'} onClick={() => setMode('file')}>
+          File download
+        </button>
+      </div>
+
+      {mode === 'design' && <TemplateDesigner onSaved={load} />}
+
+      {mode === 'file' && (
       <form onSubmit={handleAdd} className="card form-card">
-        <h3>Upload a template</h3>
+        <h3>Upload a template file</h3>
         <label>Title
           <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </label>
@@ -169,10 +183,16 @@ function AdminTemplates() {
         </label>
         <button type="submit" disabled={busy}>{busy ? 'Uploading…' : 'Add template'}</button>
       </form>
+      )}
+
       <ul className="admin-list">
         {templates.map((t) => (
           <li key={t.id}>
-            <span><strong>{t.title}</strong>{t.weekOf ? ` — week of ${t.weekOf}` : ''}</span>
+            <span>
+              <strong>{t.title}</strong>
+              {t.kind === 'design' && <span className="pill" style={{ marginLeft: 8 }}>smart</span>}
+              {t.weekOf ? ` — week of ${t.weekOf}` : ''}
+            </span>
             <button className="link-btn danger" onClick={() => handleDelete(t.id)}>Delete</button>
           </li>
         ))}
