@@ -51,12 +51,8 @@ a { color: var(--accent); }
   font-weight: 800; font-size: 1.05rem; color: #fff; letter-spacing: -0.01em;
   display: flex; align-items: center; gap: 0.6rem;
 }
-.brand-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  color: #fff; font-size: 0.8rem; font-weight: 800;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+.brand-logo {
+  height: 36px; width: auto; max-width: 160px; display: block; object-fit: contain;
 }
 .nav { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; flex: 1; }
 .nav a {

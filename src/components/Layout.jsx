@@ -19,7 +19,12 @@ export default function Layout() {
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand">
-            <span className="brand-mark">AP</span>
+            <img
+              className="brand-logo"
+              src="/logo.png"
+              alt="Own It Social"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            />
             Agent Portal
           </span>
           {user && (
@@ -49,7 +54,7 @@ export default function Layout() {
       </main>
       <footer className="footer">
         <div className="footer-inner">
-          <span>© {new Date().getFullYear()} Agent Portal</span>
+          <span>© {new Date().getFullYear()} Own It Social</span>
           <span className="muted">Built for loan officers &amp; the agents who work with them</span>
         </div>
       </footer>
