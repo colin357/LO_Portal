@@ -29,7 +29,9 @@ Built with React (Vite), React Router, and Firebase (Auth, Firestore, Storage).
 ### 1. Create a Firebase project
 
 1. Go to [console.firebase.google.com](https://console.firebase.google.com) and create a project.
-2. **Authentication** → Sign-in method → enable **Email/Password**.
+2. **Authentication** → Sign-in method → enable **Email/Password**, and under it also toggle
+   on **Email link (passwordless sign-in)**. Make sure your production domain is listed under
+   Authentication → Settings → **Authorized domains** (localhost is included by default).
 3. **Firestore Database** → Create database (production mode).
 4. **Storage** → Get started.
 5. Project settings → General → *Your apps* → add a **Web app** and copy the config values.

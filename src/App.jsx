@@ -8,12 +8,16 @@ import Templates from './pages/Templates'
 import Profile from './pages/Profile'
 import Admin from './pages/Admin'
 import SuperAdmin from './pages/SuperAdmin'
+import FinishSignIn from './pages/FinishSignIn'
+import CompleteProfile from './pages/CompleteProfile'
 
 function Protected({ children, role = null }) {
   const { user, profile, loading } = useAuth()
   if (loading) return <div className="page-loading">Loading…</div>
   if (!user) return <Navigate to="/login" replace />
-  if (role && profile?.role !== role) return <Navigate to="/" replace />
+  // Signed in (e.g. via email link) but no profile yet: needs a referral code.
+  if (!profile) return <Navigate to="/complete-profile" replace />
+  if (role && profile.role !== role) return <Navigate to="/" replace />
   return children
 }
 
@@ -22,6 +26,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/finish-signin" element={<FinishSignIn />} />
+      <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Protected><Videos /></Protected>} />
         <Route path="/templates" element={<Protected><Templates /></Protected>} />
