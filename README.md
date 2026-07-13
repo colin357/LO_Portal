@@ -112,6 +112,20 @@ publish a video or template to every loan officer in one go.
 
 Rendering happens entirely in the browser (HTML canvas) — no servers or per-image fees.
 
+## Deploying (Firebase Hosting)
+
+`firebase.json` is already configured — including the SPA rewrite that serves `index.html`
+for every route (without it, reloading on a page like `/templates` 404s):
+
+```bash
+npm run build
+firebase deploy --only hosting
+```
+
+If you host somewhere else, apply the same "rewrite all paths to /index.html" rule there
+(Netlify: `/* /index.html 200` in `_redirects`; Vercel handles it via a rewrite in
+`vercel.json`).
+
 ## Data model
 
 | Collection | Doc ID | Purpose |
