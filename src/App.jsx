@@ -7,12 +7,13 @@ import Videos from './pages/Videos'
 import Templates from './pages/Templates'
 import Profile from './pages/Profile'
 import Admin from './pages/Admin'
+import SuperAdmin from './pages/SuperAdmin'
 
-function Protected({ children, loOnly = false }) {
+function Protected({ children, role = null }) {
   const { user, profile, loading } = useAuth()
   if (loading) return <div className="page-loading">Loading…</div>
   if (!user) return <Navigate to="/login" replace />
-  if (loOnly && profile?.role !== 'lo') return <Navigate to="/" replace />
+  if (role && profile?.role !== role) return <Navigate to="/" replace />
   return children
 }
 
@@ -25,7 +26,8 @@ export default function App() {
         <Route path="/" element={<Protected><Videos /></Protected>} />
         <Route path="/templates" element={<Protected><Templates /></Protected>} />
         <Route path="/profile" element={<Protected><Profile /></Protected>} />
-        <Route path="/admin" element={<Protected loOnly><Admin /></Protected>} />
+        <Route path="/admin" element={<Protected role="lo"><Admin /></Protected>} />
+        <Route path="/super" element={<Protected role="super"><SuperAdmin /></Protected>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -14,14 +14,22 @@ service cloud.firestore {
       return signedIn() && myDoc().role == 'lo';
     }
 
+    // Super admins sit above every loan officer: they can manage videos,
+    // templates, referral codes, and user records for the whole system.
+    function isSuper() {
+      return signedIn() && myDoc().role == 'super';
+    }
+
     // A user's own doc, plus:
     //  - agents can read their loan officer's doc (name shown on the videos page)
     //  - loan officers can read/list the agents linked to them
+    //  - super admins can read everyone
     match /users/{userId} {
       allow read: if signedIn() && (
         request.auth.uid == userId ||
         resource.data.loId == request.auth.uid ||
-        myDoc().loId == userId
+        myDoc().loId == userId ||
+        isSuper()
       );
 
       // Signup: an agent may create their own doc, but only as role 'agent'
@@ -33,34 +41,39 @@ service cloud.firestore {
              == request.resource.data.loId;
 
       // Users can update their own profile but never change role or loId.
-      allow update: if signedIn()
+      // Super admins can update anyone.
+      allow update: if isSuper() || (
+        signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == resource.data.role
-        && request.resource.data.get('loId', '') == resource.data.get('loId', '');
+        && request.resource.data.get('loId', '') == resource.data.get('loId', '')
+      );
     }
 
     // Public read so the signup page can validate a code before the account exists.
-    // Only a loan officer can claim a code, and only for themselves.
+    // A loan officer can claim a code for themselves; super admins for anyone.
     match /referralCodes/{code} {
       allow get: if true;
-      allow list: if false;
-      allow write: if isLO()
+      allow list: if isSuper();
+      allow write: if isSuper() || (
+        isLO()
         && request.resource.data.loId == request.auth.uid
-        && (resource == null || resource.data.loId == request.auth.uid);
+        && (resource == null || resource.data.loId == request.auth.uid)
+      );
     }
 
     match /videos/{videoId} {
       allow read: if signedIn() &&
-        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId);
-      allow create: if isLO() && request.resource.data.loId == request.auth.uid;
-      allow update, delete: if isLO() && resource.data.loId == request.auth.uid;
+        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId || isSuper());
+      allow create: if isSuper() || (isLO() && request.resource.data.loId == request.auth.uid);
+      allow update, delete: if isSuper() || (isLO() && resource.data.loId == request.auth.uid);
     }
 
     match /templates/{templateId} {
       allow read: if signedIn() &&
-        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId);
-      allow create: if isLO() && request.resource.data.loId == request.auth.uid;
-      allow update, delete: if isLO() && resource.data.loId == request.auth.uid;
+        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId || isSuper());
+      allow create: if isSuper() || (isLO() && request.resource.data.loId == request.auth.uid);
+      allow update, delete: if isSuper() || (isLO() && resource.data.loId == request.auth.uid);
     }
   }
 }

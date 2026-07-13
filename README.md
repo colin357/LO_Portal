@@ -14,8 +14,13 @@ A portal that connects loan officers (LOs) with the real estate agents who refer
   visually positions headshot / logo / contact-info layers in a drag-and-drop designer.
   Agents see the same design rendered live with **their own** branding and download a
   finished PNG — no design work on their end.
+- **Video progress tracking** — agents see videos in two columns, "Not started" and
+  "Completed", and move them across as they watch.
 - **Admin area** (LO only) — manage videos and templates, view registered agents and whether
   they've uploaded their branding assets, and manage the referral code / signup link.
+- **Super admin** — a tier above every loan officer: pick any LO in the system and manage
+  their videos, templates, agents, and referral code, or publish a video/template to **all**
+  loan officers at once.
 
 Built with React (Vite), React Router, and Firebase (Auth, Firestore, Storage).
 
@@ -83,6 +88,13 @@ Each LO account is created once, by hand:
 
 3. Log in to the app as the LO, open **Admin → Referral Code**, and set a code
    (e.g. `SMITH-LOANS`). The share link shown there is what you send to agents.
+
+### 7. Create your super admin account
+
+Same two steps as an LO account, but with `"role": "super"` in the Firestore `users`
+document. Super admins get a **Super Admin** nav item (`/super`) where they can select any
+loan officer, manage that LO's videos/templates/agents/referral code, and optionally
+publish a video or template to every loan officer in one go.
 
 ## How smart templates work
 

@@ -8,8 +8,10 @@ import { renderTemplate, defaultLayer, TEXT_FIELDS, SAMPLE_AGENT } from '../lib/
 // Visual designer for "smart" templates: upload a background image, then
 // position headshot / logo / text layers on it. Agents get the same layout
 // rendered with their own profile data.
-export default function TemplateDesigner({ onSaved }) {
+export default function TemplateDesigner({ loId, broadcastLoIds = null, onSaved }) {
   const { user } = useAuth()
+  const targetLoId = loId || user.uid
+  const [broadcast, setBroadcast] = useState(false)
   const canvasRef = useRef(null)
   const [bgFile, setBgFile] = useState(null)
   const [bgImage, setBgImage] = useState(null)
@@ -110,24 +112,29 @@ export default function TemplateDesigner({ onSaved }) {
     }
     setBusy(true)
     try {
+      // Stored under the uploader's uid to satisfy storage rules; the
+      // Firestore doc's loId controls which loan officer's agents see it.
       const path = `templates/${user.uid}/${crypto.randomUUID()}-${bgFile.name}`
       const storageRef = ref(storage, path)
       await uploadBytes(storageRef, bgFile, { contentType: bgFile.type })
       const bgUrl = await getDownloadURL(storageRef)
-      await addDoc(collection(db, 'templates'), {
-        loId: user.uid,
-        kind: 'design',
-        title: meta.title.trim(),
-        description: meta.description.trim(),
-        weekOf: meta.weekOf,
-        width: template.width,
-        height: template.height,
-        bgUrl,
-        layers: template.layers,
-        fileUrl: '',
-        previewUrl: '',
-        createdAt: serverTimestamp(),
-      })
+      const targets = broadcast && broadcastLoIds?.length ? broadcastLoIds : [targetLoId]
+      for (const target of targets) {
+        await addDoc(collection(db, 'templates'), {
+          loId: target,
+          kind: 'design',
+          title: meta.title.trim(),
+          description: meta.description.trim(),
+          weekOf: meta.weekOf,
+          width: template.width,
+          height: template.height,
+          bgUrl,
+          layers: template.layers,
+          fileUrl: '',
+          previewUrl: '',
+          createdAt: serverTimestamp(),
+        })
+      }
       setBgFile(null)
       setBgImage(null)
       setTemplate(null)
@@ -232,6 +239,12 @@ export default function TemplateDesigner({ onSaved }) {
             <label>Week of
               <input type="date" value={meta.weekOf} onChange={(e) => setMeta({ ...meta, weekOf: e.target.value })} />
             </label>
+            {broadcastLoIds && (
+              <label className="checkbox">
+                <input type="checkbox" checked={broadcast} onChange={(e) => setBroadcast(e.target.checked)} />
+                Publish to all loan officers ({broadcastLoIds.length})
+              </label>
+            )}
             <button type="submit" disabled={busy}>{busy ? 'Publishing…' : 'Publish template'}</button>
           </form>
         </>
