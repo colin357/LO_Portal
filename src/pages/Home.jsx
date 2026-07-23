@@ -5,21 +5,6 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { IconBook, IconLayers, IconChat, IconFile, IconVideo, IconCheck } from '../components/Icons'
 
-function ProgressStat({ label, value, sub, pct, tone }) {
-  return (
-    <div className="progress-stat">
-      <div className="progress-stat-top">
-        <span className="progress-stat-label">{label}</span>
-        <span className={`progress-stat-value ${tone || ''}`}>{value}</span>
-      </div>
-      <div className="progress-bar">
-        <div className={`progress-bar-fill ${tone || ''}`} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
-      <span className="progress-stat-sub">{sub}</span>
-    </div>
-  )
-}
-
 export default function Home() {
   const { profile } = useAuth()
   const isAgent = profile?.role === 'agent'
@@ -48,8 +33,6 @@ export default function Home() {
 
   const firstName = profile?.name ? profile.name.split(' ')[0] : ''
   const watched = completedIds.length
-  const watchPct = counts.videos ? (watched / counts.videos) * 100 : 0
-  const month = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })
 
   return (
     <div className="dashboard">
@@ -57,36 +40,6 @@ export default function Home() {
         <div className="hero-content">
           <h2>Welcome back{firstName ? `, ${firstName}` : ''}! 👋</h2>
           <p>Here's what's happening with your marketing today.</p>
-        </div>
-      </section>
-
-      <section className="card progress-card">
-        <div className="progress-card-head">
-          <h2>This Month's Progress</h2>
-          <span className="muted">({month})</span>
-        </div>
-        <div className="progress-grid">
-          <ProgressStat
-            label="Education Videos"
-            value={isAgent ? `${watched} of ${counts.videos}` : `${counts.videos} total`}
-            sub={isAgent ? `${watched} completed` : 'in your library'}
-            pct={isAgent ? watchPct : (counts.videos ? 100 : 0)}
-            tone="blue"
-          />
-          <ProgressStat
-            label="Resource Documents"
-            value={`${counts.documents} total`}
-            sub="PDFs & guides"
-            pct={counts.documents ? 100 : 0}
-            tone="purple"
-          />
-          <ProgressStat
-            label="Marketing Templates"
-            value={`${counts.templates} total`}
-            sub="ready to personalize"
-            pct={counts.templates ? 100 : 0}
-            tone="green"
-          />
         </div>
       </section>
 

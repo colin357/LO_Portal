@@ -49,7 +49,7 @@ export default function Assistant() {
   const [messages, setMessages] = useState([
     {
       role: 'bot',
-      text: "Hi! I'm your Own It Social assistant. Ask me about loan guidelines, qualifying, investor loans, or growing your business — I'll answer and point you to helpful training in your Education section.",
+      text: "Hi! I'm your AI assistant. Ask me about loan guidelines, qualifying, investor loans, or growing your business — I'll answer and point you to helpful training in your Education section.",
       resources: [],
     },
   ])

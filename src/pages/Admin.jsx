@@ -46,9 +46,8 @@ export default function Admin() {
   )
 }
 
-// Portal branding: the loan officer uploads a logo that replaces the generic
-// "Own It Social / Client Portal" mark in the top-left of the sidebar — for
-// the LO and for every agent linked to them.
+// Portal branding: the loan officer uploads a logo that appears in the
+// top-left of the sidebar — for the LO and for every agent linked to them.
 export function AdminBranding({ loId }) {
   const { user, refreshProfile } = useAuth()
   const [logoUrl, setLogoUrl] = useState('')

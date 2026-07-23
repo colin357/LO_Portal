@@ -138,7 +138,7 @@ export default function Onboarding() {
 
         {step === 0 && (
           <div className="onb-body">
-            <h1>Welcome to Own It Social! 🎉</h1>
+            <h1>Welcome aboard! 🎉</h1>
             <p className="muted">
               Let's set up your profile so we can create marketing content branded to <em>you</em>.
               It takes about a minute — we'll collect your headshot, company logo, and a few details
