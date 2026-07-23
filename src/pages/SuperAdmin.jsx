@@ -12,6 +12,7 @@ export default function SuperAdmin() {
   const [selected, setSelected] = useState('')
   const [tab, setTab] = useState('Videos')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     getDocs(query(collection(db, 'users'), where('role', '==', 'lo')))
@@ -20,6 +21,14 @@ export default function SuperAdmin() {
         list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         setLos(list)
         if (list.length) setSelected(list[0].id)
+      })
+      .catch((err) => {
+        // Without this, any failure (most often a Firestore permission-denied
+        // because the isSuper() rules haven't been deployed) was swallowed and
+        // the page fell through to the misleading "No loan officers yet" empty
+        // state — even when LO accounts exist.
+        console.error('Failed to load loan officers:', err)
+        setError(err)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -37,7 +46,20 @@ export default function SuperAdmin() {
         </p>
       </div>
 
-      {los.length === 0 ? (
+      {error ? (
+        <div className="empty">
+          {error.code === 'permission-denied' ? (
+            <>
+              Couldn't load loan officers — Firestore denied the request. This usually means the
+              latest security rules (which grant super admins read access to all users) haven't
+              been deployed, or your own account isn't set to <code>role: "super"</code>. Deploy{' '}
+              <code>firestore.rules</code> and confirm your user doc (see README), then reload.
+            </>
+          ) : (
+            <>Couldn't load loan officers: {error.message || 'unknown error'}. Please reload and try again.</>
+          )}
+        </div>
+      ) : los.length === 0 ? (
         <div className="empty">
           No loan officers yet. Create LO accounts in the Firebase console (see README), and
           they'll appear here.
