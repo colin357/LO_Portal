@@ -338,6 +338,30 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 .doc-body { flex: 1; min-width: 0; }
 .doc-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
+
+/* ============ Image cropper ============ */
+.cropper-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.cropper-modal {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-md);
+  padding: 1.4rem; width: min(380px, 100%); max-height: 92vh; overflow-y: auto;
+}
+.cropper-modal h3 { margin: 0 0 0.9rem; }
+.cropper-presets { display: flex; gap: 0.4rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+.cropper-stage { display: flex; justify-content: center; margin: 0.2rem 0 0.9rem; }
+.cropper-frame {
+  position: relative; overflow: hidden; touch-action: none; cursor: grab;
+  border-radius: 12px; background: #f1f5f9;
+  box-shadow: 0 0 0 1px var(--border), 0 0 0 9999px rgba(15, 23, 42, 0.04) inset;
+}
+.cropper-frame:active { cursor: grabbing; }
+.cropper-frame img { user-select: none; -webkit-user-drag: none; }
+.cropper-zoom { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; font-weight: 600; }
+.cropper-zoom input[type="range"] { flex: 1; }
+.cropper-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.6rem; }
 .doc-body h3 { margin: 0 0 0.15rem; }
 .doc-body .muted { font-size: 0.83rem; margin: 0; }
 
