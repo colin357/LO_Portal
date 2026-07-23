@@ -5,6 +5,32 @@ import { useAuth } from '../context/AuthContext'
 import { toEmbedUrl } from '../lib/video'
 import { IconFile } from '../components/Icons'
 
+// In-portal PDF viewer: renders the file in an overlay iframe so the agent
+// stays inside the app instead of being bounced to a new browser tab.
+function PdfViewer({ document: docItem, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="pdf-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="pdf-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pdf-modal-head">
+          <h3>{docItem.title}</h3>
+          <div className="pdf-modal-actions">
+            <a className="btn ghost small" href={docItem.fileUrl} target="_blank" rel="noreferrer">Open in new tab</a>
+            <a className="btn ghost small" href={docItem.fileUrl} download={docItem.fileName || undefined}>Download</a>
+            <button type="button" className="pdf-close" onClick={onClose} aria-label="Close">✕</button>
+          </div>
+        </div>
+        <iframe className="pdf-frame" src={docItem.fileUrl} title={docItem.title} />
+      </div>
+    </div>
+  )
+}
+
 // Sort by the `order` field client-side. Doing the ordering here (instead of in
 // the Firestore query with orderBy) means the read only needs the `loId`
 // equality filter — no composite index to deploy, and docs that predate the
@@ -44,8 +70,8 @@ function VideoCard({ video, done, onToggle }) {
   )
 }
 
-function DocumentCard({ document }) {
-  // PDFs open inline in a new browser tab; other file types only offer download.
+function DocumentCard({ document, onView }) {
+  // PDFs open in an in-portal viewer; other file types only offer download.
   const isPdf = (document.ext || '').toUpperCase() === 'PDF' ||
     (document.fileName || '').toLowerCase().endsWith('.pdf')
   return (
@@ -57,9 +83,9 @@ function DocumentCard({ document }) {
       </div>
       <div className="doc-actions">
         {isPdf && (
-          <a className="btn ghost small" href={document.fileUrl} target="_blank" rel="noreferrer">
+          <button type="button" className="btn ghost small" onClick={() => onView(document)}>
             View
-          </a>
+          </button>
         )}
         <a className="btn ghost small" href={document.fileUrl} target="_blank" rel="noreferrer" download={document.fileName || undefined}>
           Download{document.ext ? ` ${document.ext}` : ''}
@@ -75,6 +101,7 @@ export default function Education() {
   const [documents, setDocuments] = useState([])
   const [lo, setLo] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [viewingDoc, setViewingDoc] = useState(null)
 
   const isAgent = profile?.role === 'agent'
   const loId = profile?.role === 'lo' ? profile.id : profile?.loId
@@ -170,10 +197,12 @@ export default function Education() {
             <span className="count-badge">{documents.length}</span>
           </div>
           <div className="doc-grid">
-            {documents.map((d) => <DocumentCard key={d.id} document={d} />)}
+            {documents.map((d) => <DocumentCard key={d.id} document={d} onView={setViewingDoc} />)}
           </div>
         </>
       )}
+
+      {viewingDoc && <PdfViewer document={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>
   )
 }
