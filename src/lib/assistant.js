@@ -94,7 +94,7 @@ const KNOWLEDGE_BASE = [
 ]
 
 const FALLBACK =
-  "I'm your Own It Social assistant — I can help with loan guidelines, qualifying, investor/DSCR loans, marketing, and growing your business, and point you to the right training in your Education section. Try asking something like “What credit score do buyers need?” or “How do I get more investor business?” For specifics on a real client's file, your loan officer is the best resource.";
+  "I'm your AI assistant — I can help with loan guidelines, qualifying, investor/DSCR loans, marketing, and growing your business, and point you to the right training in your Education section. Try asking something like “What credit score do buyers need?” or “How do I get more investor business?” For specifics on a real client's file, your loan officer is the best resource.";
 
 const STOP = new Set(['the', 'a', 'an', 'is', 'are', 'to', 'of', 'and', 'or', 'for', 'in', 'on', 'do', 'i', 'my', 'me', 'we', 'you', 'how', 'what', 'can', 'with', 'about', 'get', 'need', 'does', 'it', 'be', 'have', 'has', 'want', 'more', 'some'])
 
