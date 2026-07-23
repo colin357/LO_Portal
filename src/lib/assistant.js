@@ -158,28 +158,28 @@ export function localAnswer(question, resources = []) {
   return { text, resources: ranked }
 }
 
-// Public entry point. Tries a configured LLM endpoint first, then falls back
-// to the local engine so the feature always works.
+// Public entry point. Calls the live LLM endpoint (the Vercel /api/assistant
+// function backed by OpenAI) and falls back to the offline engine on any error
+// — so the assistant keeps working in local dev or if the API is unavailable.
 export async function askAssistant(question, resources = []) {
-  const endpoint = import.meta.env.VITE_ASSISTANT_ENDPOINT
-  if (endpoint) {
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, resources }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        // Expect { text, resources? }. Fall back to local resource ranking.
-        return {
-          text: data.text || FALLBACK,
-          resources: data.resources || localAnswer(question, resources).resources,
-        }
+  const endpoint = import.meta.env.VITE_ASSISTANT_ENDPOINT || '/api/assistant'
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, resources }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      // The endpoint returns { text }; we always attach locally-ranked resource
+      // links so the answer points at the right Education items.
+      return {
+        text: data.text || FALLBACK,
+        resources: data.resources || localAnswer(question, resources).resources,
       }
-    } catch {
-      /* fall through to local engine */
     }
+  } catch {
+    /* fall through to local engine */
   }
   return localAnswer(question, resources)
 }

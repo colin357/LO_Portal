@@ -154,11 +154,26 @@ The **AI Assistant** page answers agent questions (loan guidelines, credit/DTI, 
 investor/DSCR loans, first-time buyers, refinancing, marketing, referrals) and points to the
 loan officer's own videos and documents that best match the question.
 
-By default it runs entirely in the browser against a curated knowledge base in
-`src/lib/assistant.js` — **no API key or backend required**. To swap in a real LLM, set
-`VITE_ASSISTANT_ENDPOINT` in `.env` to an HTTPS endpoint that accepts
-`POST { question, resources }` and returns `{ text, resources? }`; the app falls back to the
-built-in engine automatically if the request fails.
+### Live LLM (OpenAI) via Vercel
+
+The browser posts `{ question, resources }` to **`/api/assistant`** — a Vercel serverless
+function (`api/assistant.js`) that calls OpenAI with your Education library as context. The
+API key stays server-side and is never shipped to the browser.
+
+To enable it on Vercel:
+
+1. Deploy this repo to Vercel (it auto-detects Vite; `vercel.json` handles SPA routing while
+   leaving `/api/*` for the function).
+2. In **Vercel → Project → Settings → Environment Variables**, add:
+   - `OPENAI_API_KEY` = your key (required)
+   - `OPENAI_MODEL` = `gpt-4o-mini` (optional; this is the default)
+3. Redeploy.
+
+**Graceful fallback:** if the key is missing, the API errors, or you're running locally with
+`npm run dev` (no serverless function), the browser automatically falls back to the built-in
+offline knowledge engine in `src/lib/assistant.js` — so the assistant always responds. Either
+way, the matching Education videos/documents are attached to the answer as links. Set
+`VITE_ASSISTANT_ENDPOINT` only if you want to point at a different endpoint than `/api/assistant`.
 
 ## Multi-LO ready
 

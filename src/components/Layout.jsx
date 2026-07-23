@@ -5,7 +5,7 @@ import { auth } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import {
   IconHome, IconBook, IconLayers, IconChat, IconUser, IconShield, IconStar,
-  IconGift, IconSignOut, IconCollapse, IconSparkle,
+  IconSignOut, IconCollapse, IconSparkle,
 } from './Icons'
 
 // Route -> page title shown in the content top bar.
@@ -26,7 +26,6 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('sidebarCollapsed') === '1'
   )
-  const [copied, setCopied] = useState(false)
 
   const handleSignOut = async () => {
     await signOut(auth)
@@ -38,19 +37,6 @@ export default function Layout() {
       localStorage.setItem('sidebarCollapsed', c ? '0' : '1')
       return !c
     })
-  }
-
-  const referAFriend = async () => {
-    const link = window.location.origin
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Own It Social', url: link })
-        return
-      }
-      await navigator.clipboard.writeText(link)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch { /* user dismissed share sheet */ }
   }
 
   const initial = (profile?.name || user?.email || '?').charAt(0).toUpperCase()
@@ -99,10 +85,6 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar-footer">
-          <button className="sidebar-action refer" onClick={referAFriend} title="Refer a Friend">
-            <span className="nav-icon"><IconGift /></span>
-            <span className="nav-label">{copied ? 'Link copied!' : 'Refer a Friend'}</span>
-          </button>
           <button className="sidebar-action" onClick={handleSignOut} title="Sign Out">
             <span className="nav-icon"><IconSignOut /></span>
             <span className="nav-label">Sign Out</span>
