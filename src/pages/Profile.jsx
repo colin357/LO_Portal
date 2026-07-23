@@ -42,6 +42,8 @@ export default function Profile() {
     brokerage: profile?.brokerage || '',
     website: profile?.website || '',
     licenseNumber: profile?.licenseNumber || '',
+    brandColor: profile?.brandColor || '#2563eb',
+    tagline: profile?.tagline || '',
   })
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -69,6 +71,8 @@ export default function Profile() {
         brokerage: form.brokerage.trim(),
         website: form.website.trim(),
         licenseNumber: form.licenseNumber.trim(),
+        brandColor: form.brandColor,
+        tagline: form.tagline.trim(),
       })
       await refreshProfile()
       setSaved(true)
@@ -79,7 +83,6 @@ export default function Profile() {
 
   return (
     <div className="narrow">
-      <h1>My Profile</h1>
       <p className="muted">
         Your headshot, logo, and contact info are used to generate marketing content on your behalf.
       </p>
@@ -104,6 +107,12 @@ export default function Profile() {
         </label>
         <label>License #
           <input value={form.licenseNumber} onChange={set('licenseNumber')} />
+        </label>
+        <label>Brand color
+          <input type="color" value={form.brandColor} onChange={set('brandColor')} style={{ maxWidth: 80, height: 40, padding: 4 }} />
+        </label>
+        <label>Tagline / slogan
+          <input value={form.tagline} onChange={set('tagline')} placeholder="e.g. Your trusted partner in real estate" />
         </label>
         <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
         {saved && <span className="saved-msg">Saved ✓</span>}

@@ -75,5 +75,13 @@ service cloud.firestore {
       allow create: if isSuper() || (isLO() && request.resource.data.loId == request.auth.uid);
       allow update, delete: if isSuper() || (isLO() && resource.data.loId == request.auth.uid);
     }
+
+    // Resource documents (PDFs, guides) — same visibility model as videos.
+    match /documents/{documentId} {
+      allow read: if signedIn() &&
+        (resource.data.loId == request.auth.uid || resource.data.loId == myDoc().loId || isSuper());
+      allow create: if isSuper() || (isLO() && request.resource.data.loId == request.auth.uid);
+      allow update, delete: if isSuper() || (isLO() && resource.data.loId == request.auth.uid);
+    }
   }
 }

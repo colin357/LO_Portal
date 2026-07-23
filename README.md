@@ -2,10 +2,18 @@
 
 A portal that connects loan officers (LOs) with the real estate agents who refer them business.
 
+- **Sidebar app layout** — a collapsible sidebar (Home, Education, Templates, AI Assistant,
+  My Profile, Admin) with a Home dashboard showing a welcome banner and this month's progress.
 - **Agent signup with a referral code** — the LO shares a code (or a prefilled link like
   `/signup?ref=SMITH-LOANS`), and every agent who registers with it is linked to that LO.
-- **Video library** — agents see the LO's videos on loan programs, how to refer clients,
-  and what makes the LO different. Supports YouTube, Vimeo, and Loom links.
+- **Realtor onboarding** — right after signing up, agents go through a short wizard that
+  collects their headshot, company logo, contact details, brand color, and tagline so
+  marketing graphics can be generated on their behalf.
+- **Education center** — agents see the LO's **videos** (YouTube, Vimeo, Loom) *and* download
+  **resource documents** (PDFs, decks, handouts) for clients who'd rather read than watch.
+- **AI Assistant** — agents can ask questions about loan guidelines, qualifying, investor/DSCR
+  business, marketing, and more. The assistant answers and links to matching training in the
+  Education section. Runs offline out of the box; optionally pluggable to a real LLM endpoint.
 - **Agent profile** — agents upload a headshot, logo, and contact info so marketing content
   can be generated on their behalf.
 - **Weekly templates** — the LO uploads new marketing templates each week; agents log in
@@ -60,6 +68,7 @@ indexes. The first time you run the app, Firestore will log an error in the brow
 a **direct link to create the index** — click it for each of:
 
 - `videos`: `loId` (asc) + `order` (asc)
+- `documents`: `loId` (asc) + `order` (asc)
 - `templates`: `loId` (asc) + `createdAt` (desc)
 
 ### 5. Allow canvas access to Storage images (required for smart templates)
@@ -130,12 +139,26 @@ If you host somewhere else, apply the same "rewrite all paths to /index.html" ru
 
 | Collection | Doc ID | Purpose |
 |---|---|---|
-| `users` | auth UID | Both LOs (`role: "lo"`) and agents (`role: "agent"`, with `loId` pointing at their LO) |
+| `users` | auth UID | Both LOs (`role: "lo"`) and agents (`role: "agent"`, with `loId` pointing at their LO). Agent branding fields: `headshotUrl`, `logoUrl`, `brandColor`, `tagline`, and `onboarded` (set to `false` at signup, `true` once the onboarding wizard is finished/skipped) |
 | `referralCodes` | the code (uppercase) | `{ loId }` — resolves a signup code to a loan officer |
 | `videos` | auto | `{ loId, title, description, url, order }` |
+| `documents` | auto | `{ loId, title, description, fileUrl, fileName, ext, order, createdAt }` — resource PDFs/handouts |
 | `templates` | auto | `{ loId, title, description, weekOf, fileUrl, previewUrl, createdAt }` |
 
-Storage paths: `users/{uid}/headshot`, `users/{uid}/logo`, `templates/{loUid}/...`.
+Storage paths: `users/{uid}/headshot`, `users/{uid}/logo`, `templates/{loUid}/...`,
+`documents/{loUid}/...`.
+
+## AI Assistant
+
+The **AI Assistant** page answers agent questions (loan guidelines, credit/DTI, down payment,
+investor/DSCR loans, first-time buyers, refinancing, marketing, referrals) and points to the
+loan officer's own videos and documents that best match the question.
+
+By default it runs entirely in the browser against a curated knowledge base in
+`src/lib/assistant.js` — **no API key or backend required**. To swap in a real LLM, set
+`VITE_ASSISTANT_ENDPOINT` in `.env` to an HTTPS endpoint that accepts
+`POST { question, resources }` and returns `{ text, resources? }`; the app falls back to the
+built-in engine automatically if the request fails.
 
 ## Multi-LO ready
 
