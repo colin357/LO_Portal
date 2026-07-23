@@ -120,6 +120,7 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
   const [file, setFile] = useState(null)
   const [broadcast, setBroadcast] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
 
   const load = async () => {
     const snap = await getDocs(query(collection(db, 'documents'), where('loId', '==', loId), orderBy('order')))
@@ -131,6 +132,7 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
     e.preventDefault()
     if (!file) return
     setBusy(true)
+    setError(null)
     try {
       const stamp = Date.now()
       const storageRef = ref(storage, `documents/${user.uid}/${stamp}-${file.name}`)
@@ -154,6 +156,12 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
       setFile(null)
       e.target.reset()
       await load()
+    } catch (err) {
+      // Without this, an upload failure (most often storage/unauthorized when
+      // the storage.rules documents/ block hasn't been deployed) was swallowed:
+      // the button flipped back from "Uploading…" and nothing else happened.
+      console.error('Failed to add document:', err)
+      setError(err)
     } finally {
       setBusy(false)
     }
@@ -186,6 +194,13 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
           </label>
         )}
         <button type="submit" disabled={busy}>{busy ? 'Uploading…' : 'Add document'}</button>
+        {error && (
+          <p className="form-error">
+            {error.code === 'storage/unauthorized'
+              ? "Upload denied by Firebase Storage. Deploy storage.rules (it must include the documents/ rule) and confirm you're signed in as the loan officer, then try again."
+              : `Couldn't add the document: ${error.message || 'unknown error'}.`}
+          </p>
+        )}
       </form>
       <ul className="admin-list">
         {documents.map((d) => (
@@ -211,6 +226,7 @@ export function AdminTemplates({ loId, broadcastLoIds = null }) {
   const [preview, setPreview] = useState(null)
   const [broadcast, setBroadcast] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
 
   const load = async () => {
     const snap = await getDocs(query(collection(db, 'templates'), where('loId', '==', loId), orderBy('createdAt', 'desc')))
@@ -228,6 +244,7 @@ export function AdminTemplates({ loId, broadcastLoIds = null }) {
     e.preventDefault()
     if (!file) return
     setBusy(true)
+    setError(null)
     try {
       const stamp = Date.now()
       // Files are stored under the uploader's uid (matches storage rules);
@@ -254,6 +271,9 @@ export function AdminTemplates({ loId, broadcastLoIds = null }) {
       setPreview(null)
       e.target.reset()
       await load()
+    } catch (err) {
+      console.error('Failed to add template:', err)
+      setError(err)
     } finally {
       setBusy(false)
     }
@@ -305,6 +325,13 @@ export function AdminTemplates({ loId, broadcastLoIds = null }) {
           </label>
         )}
         <button type="submit" disabled={busy}>{busy ? 'Uploading…' : 'Add template'}</button>
+        {error && (
+          <p className="form-error">
+            {error.code === 'storage/unauthorized'
+              ? "Upload denied by Firebase Storage. Deploy storage.rules (it must include the templates/ rule) and confirm you're signed in as the loan officer, then try again."
+              : `Couldn't add the template: ${error.message || 'unknown error'}.`}
+          </p>
+        )}
       </form>
       )}
 
