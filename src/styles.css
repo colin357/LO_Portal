@@ -337,6 +337,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   display: flex; align-items: center; justify-content: center;
 }
 .doc-body { flex: 1; min-width: 0; }
+.doc-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
 .doc-body h3 { margin: 0 0 0.15rem; }
 .doc-body .muted { font-size: 0.83rem; margin: 0; }
 

@@ -45,6 +45,8 @@ export default function Layout() {
 
   // The top-left brand shows the loan officer's uploaded logo. For an LO/super
   // that's their own profile; for an agent we fetch their linked LO's logo.
+  // Prefer the dedicated portal logo (Admin → Branding); fall back to the
+  // general logo field so a logo uploaded on My Profile shows up too.
   const [brand, setBrand] = useState({ logoUrl: '', name: '' })
   useEffect(() => {
     if (!profile) return
@@ -52,14 +54,15 @@ export default function Layout() {
       let active = true
       getDoc(doc(db, 'users', profile.loId)).then((snap) => {
         if (active && snap.exists()) {
-          setBrand({ logoUrl: snap.data().portalLogoUrl || '', name: snap.data().name || '' })
+          const d = snap.data()
+          setBrand({ logoUrl: d.portalLogoUrl || d.logoUrl || '', name: d.name || '' })
         }
       }).catch(() => {})
       return () => { active = false }
     }
     // LO / super admin: use their own doc.
-    setBrand({ logoUrl: profile.portalLogoUrl || '', name: profile.name || '' })
-  }, [profile?.role, profile?.loId, profile?.portalLogoUrl, profile?.name])
+    setBrand({ logoUrl: profile.portalLogoUrl || profile.logoUrl || '', name: profile.name || '' })
+  }, [profile?.role, profile?.loId, profile?.portalLogoUrl, profile?.logoUrl, profile?.name])
 
   const navItems = [
     { to: '/', label: 'Home', icon: IconHome, end: true },
@@ -80,10 +83,11 @@ export default function Layout() {
           ) : (
             <>
               <span className="brand-mark"><IconSparkle size={20} /></span>
-              <span className="brand-text">
-                <strong>{brand.name || 'Client Portal'}</strong>
-                <small>{brand.name ? 'Client Portal' : ''}</small>
-              </span>
+              {brand.name && (
+                <span className="brand-text">
+                  <strong>{brand.name}</strong>
+                </span>
+              )}
             </>
           )}
         </div>
