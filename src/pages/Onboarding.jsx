@@ -1,32 +1,35 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { doc, updateDoc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../firebase'
+import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { IconUpload, IconCheck } from '../components/Icons'
+import ImageCropper from '../components/ImageCropper'
+import { uploadImageAsset, CROP_PRESETS } from '../lib/imageAssets'
 
 const STEPS = ['Welcome', 'Your info', 'Headshot', 'Company logo', 'Branding']
 
-function AssetUpload({ label, hint, currentUrl, onUpload }) {
-  const [busy, setBusy] = useState(false)
-  const handleChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setBusy(true)
-    try { await onUpload(file) } finally { setBusy(false) }
-  }
+function AssetUpload({ label, hint, currentUrl, busy, onPick, onAdjust, hasOriginal }) {
   return (
     <div className="onb-asset">
       {currentUrl
         ? <img className="onb-asset-preview" src={currentUrl} alt={label} />
         : <div className="onb-asset-placeholder"><IconUpload size={26} /><span>{hint}</span></div>}
       <label className="btn ghost">
-        {busy ? 'Uploading…' : (currentUrl ? `Replace ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`)}
-        <input type="file" accept="image/*" hidden onChange={handleChange} disabled={busy} />
+        {busy ? 'Working…' : (currentUrl ? `Replace ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`)}
+        <input type="file" accept="image/*" hidden onChange={onPick} disabled={busy} />
       </label>
+      {hasOriginal && (
+        <button type="button" className="link-btn" onClick={onAdjust} disabled={busy}>Adjust crop</button>
+      )}
     </div>
   )
+}
+
+// Firestore field names per asset type.
+const KEYS = {
+  headshot: { url: 'headshotUrl', original: 'headshotOriginalUrl' },
+  logo: { url: 'logoUrl', original: 'logoOriginalUrl' },
 }
 
 // Post-signup wizard: collect the branding assets and details our design team
@@ -36,6 +39,8 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [busy, setBusy] = useState(false)
+  // Active crop editor: { field, src, original: File|null }. null = closed.
+  const [cropper, setCropper] = useState(null)
   const [form, setForm] = useState({
     name: profile?.name || '',
     phone: profile?.phone || '',
@@ -54,14 +59,37 @@ export default function Onboarding() {
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value })
 
-  const uploadImage = (field) => async (file) => {
-    const storageRef = ref(storage, `users/${user.uid}/${field}`)
-    await uploadBytes(storageRef, file, { contentType: file.type })
-    const url = await getDownloadURL(storageRef)
-    await updateDoc(doc(db, 'users', user.uid), {
-      [field === 'headshot' ? 'headshotUrl' : 'logoUrl']: url,
-    })
-    await refreshProfile()
+  const pickFile = (field) => (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCropper({ field, src: URL.createObjectURL(file), original: file })
+  }
+
+  const adjustCrop = (field) => () => {
+    const url = profile?.[KEYS[field].original]
+    if (!url) return
+    setCropper({ field, src: url, original: null })
+  }
+
+  const closeCropper = () => {
+    if (cropper?.original) URL.revokeObjectURL(cropper.src)
+    setCropper(null)
+  }
+
+  const saveCrop = async (blob) => {
+    const { field, original } = cropper
+    setBusy(true)
+    try {
+      const res = await uploadImageAsset(user.uid, field, { blob, original })
+      const update = { [KEYS[field].url]: res.url }
+      if (res.originalUrl) update[KEYS[field].original] = res.originalUrl
+      await updateDoc(doc(db, 'users', user.uid), update)
+      await refreshProfile()
+      closeCropper()
+    } finally {
+      setBusy(false)
+    }
   }
 
   const saveDetails = async () => {
@@ -148,7 +176,14 @@ export default function Onboarding() {
               A clear, professional headshot (square works best). This is placed on your
               personalized graphics.
             </p>
-            <AssetUpload label="Headshot" hint="Drop a headshot" currentUrl={profile?.headshotUrl} onUpload={uploadImage('headshot')} />
+            <AssetUpload
+              label="Headshot" hint="Drop a headshot"
+              currentUrl={profile?.headshotUrl}
+              hasOriginal={!!profile?.headshotOriginalUrl}
+              busy={busy}
+              onPick={pickFile('headshot')}
+              onAdjust={adjustCrop('headshot')}
+            />
           </div>
         )}
 
@@ -158,7 +193,14 @@ export default function Onboarding() {
             <p className="muted">
               Your brokerage or personal logo. A transparent PNG looks best on templates.
             </p>
-            <AssetUpload label="Logo" hint="Drop a logo" currentUrl={profile?.logoUrl} onUpload={uploadImage('logo')} />
+            <AssetUpload
+              label="Logo" hint="Drop a logo"
+              currentUrl={profile?.logoUrl}
+              hasOriginal={!!profile?.logoOriginalUrl}
+              busy={busy}
+              onPick={pickFile('logo')}
+              onAdjust={adjustCrop('logo')}
+            />
           </div>
         )}
 
@@ -187,6 +229,16 @@ export default function Onboarding() {
           </div>
         </div>
       </div>
+
+      {cropper && (
+        <ImageCropper
+          src={cropper.src}
+          presets={CROP_PRESETS[cropper.field]}
+          title={`Crop ${cropper.field}`}
+          onCancel={closeCropper}
+          onSave={saveCrop}
+        />
+      )}
     </div>
   )
 }

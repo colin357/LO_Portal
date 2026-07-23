@@ -143,8 +143,18 @@ If you host somewhere else, apply the same "rewrite all paths to /index.html" ru
 | `documents` | auto | `{ loId, title, description, fileUrl, fileName, ext, order, createdAt }` — resource PDFs/handouts |
 | `templates` | auto | `{ loId, title, description, weekOf, fileUrl, previewUrl, createdAt }` |
 
-Storage paths: `users/{uid}/headshot`, `users/{uid}/logo`, `users/{uid}/portalLogo-{loUid}`
+Headshots and logos are cropped in-browser before upload (drag / zoom / pick an
+aspect); the untouched original is kept as `{field}-original` so the crop can be
+re-adjusted later. The displayed (cropped) URLs are `headshotUrl` / `logoUrl`, and
+the originals are `headshotOriginalUrl` / `logoOriginalUrl`.
+
+Storage paths: `users/{uid}/headshot`, `users/{uid}/headshot-original`,
+`users/{uid}/logo`, `users/{uid}/logo-original`, `users/{uid}/portalLogo-{loUid}`
 (LO portal logo), `templates/{loUid}/...`, `documents/{loUid}/...`.
+
+> Re-cropping an existing image redraws it onto a canvas, so the Storage bucket
+> needs CORS enabled (the same `gsutil cors set cors.json` step already required
+> for smart templates). A fresh upload crops the local file and needs no CORS.
 
 ## AI Assistant
 

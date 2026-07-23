@@ -45,6 +45,9 @@ function VideoCard({ video, done, onToggle }) {
 }
 
 function DocumentCard({ document }) {
+  // PDFs open inline in a new browser tab; other file types only offer download.
+  const isPdf = (document.ext || '').toUpperCase() === 'PDF' ||
+    (document.fileName || '').toLowerCase().endsWith('.pdf')
   return (
     <div className="card doc-card">
       <span className="doc-icon"><IconFile size={26} /></span>
@@ -52,9 +55,16 @@ function DocumentCard({ document }) {
         <h3>{document.title}</h3>
         {document.description && <p className="muted">{document.description}</p>}
       </div>
-      <a className="btn ghost small" href={document.fileUrl} target="_blank" rel="noreferrer" download>
-        Download{document.ext ? ` ${document.ext}` : ''}
-      </a>
+      <div className="doc-actions">
+        {isPdf && (
+          <a className="btn ghost small" href={document.fileUrl} target="_blank" rel="noreferrer">
+            View
+          </a>
+        )}
+        <a className="btn ghost small" href={document.fileUrl} target="_blank" rel="noreferrer" download={document.fileName || undefined}>
+          Download{document.ext ? ` ${document.ext}` : ''}
+        </a>
+      </div>
     </div>
   )
 }
