@@ -4,6 +4,27 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { toEmbedUrl } from '../lib/video'
 import { IconFile } from '../components/Icons'
+import { renderPdfThumbnail } from '../lib/pdfThumb'
+
+// Renders a small first-page preview of a PDF; falls back to a document icon
+// if the file can't be rendered (e.g. Storage CORS not configured).
+function PdfThumbnail({ url }) {
+  const [src, setSrc] = useState('')
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setSrc(''); setFailed(false)
+    renderPdfThumbnail(url)
+      .then((d) => { if (active) setSrc(d) })
+      .catch(() => { if (active) setFailed(true) })
+    return () => { active = false }
+  }, [url])
+
+  if (failed) return <span className="doc-thumb-fallback"><IconFile size={40} /></span>
+  if (!src) return <span className="doc-thumb-skeleton" aria-hidden="true" />
+  return <img className="doc-thumb-img" src={src} alt="" />
+}
 
 // In-portal PDF viewer: renders the file in an overlay iframe so the agent
 // stays inside the app instead of being bounced to a new browser tab.
@@ -71,12 +92,23 @@ function VideoCard({ video, done, onToggle }) {
 }
 
 function DocumentCard({ document, onView }) {
-  // PDFs open in an in-portal viewer; other file types only offer download.
+  // PDFs get a first-page preview and open in an in-portal viewer; other file
+  // types just show an icon and offer download.
   const isPdf = (document.ext || '').toUpperCase() === 'PDF' ||
     (document.fileName || '').toLowerCase().endsWith('.pdf')
   return (
     <div className="card doc-card">
-      <span className="doc-icon"><IconFile size={26} /></span>
+      <button
+        type="button"
+        className="doc-thumb"
+        onClick={() => isPdf && onView(document)}
+        disabled={!isPdf}
+        title={isPdf ? 'View document' : undefined}
+      >
+        {isPdf
+          ? <PdfThumbnail url={document.fileUrl} />
+          : <span className="doc-thumb-fallback"><IconFile size={40} /></span>}
+      </button>
       <div className="doc-body">
         <h3>{document.title}</h3>
         {document.description && <p className="muted">{document.description}</p>}
