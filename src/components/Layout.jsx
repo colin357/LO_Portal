@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
-import { auth } from '../firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { auth, db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import {
   IconHome, IconBook, IconLayers, IconChat, IconUser, IconShield, IconStar,
@@ -42,6 +43,24 @@ export default function Layout() {
   const initial = (profile?.name || user?.email || '?').charAt(0).toUpperCase()
   const title = TITLES[location.pathname] || 'Home'
 
+  // The top-left brand shows the loan officer's uploaded logo. For an LO/super
+  // that's their own profile; for an agent we fetch their linked LO's logo.
+  const [brand, setBrand] = useState({ logoUrl: '', name: '' })
+  useEffect(() => {
+    if (!profile) return
+    if (profile.role === 'agent' && profile.loId) {
+      let active = true
+      getDoc(doc(db, 'users', profile.loId)).then((snap) => {
+        if (active && snap.exists()) {
+          setBrand({ logoUrl: snap.data().portalLogoUrl || '', name: snap.data().name || '' })
+        }
+      }).catch(() => {})
+      return () => { active = false }
+    }
+    // LO / super admin: use their own doc.
+    setBrand({ logoUrl: profile.portalLogoUrl || '', name: profile.name || '' })
+  }, [profile?.role, profile?.loId, profile?.portalLogoUrl, profile?.name])
+
   const navItems = [
     { to: '/', label: 'Home', icon: IconHome, end: true },
     { to: '/education', label: 'Education', icon: IconBook },
@@ -56,11 +75,17 @@ export default function Layout() {
     <div className={`app-shell${collapsed ? ' collapsed' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span className="brand-mark"><IconSparkle size={20} /></span>
-          <span className="brand-text">
-            <strong>Own It Social</strong>
-            <small>Client Portal</small>
-          </span>
+          {brand.logoUrl ? (
+            <img className="brand-logo" src={brand.logoUrl} alt={brand.name || 'Logo'} />
+          ) : (
+            <>
+              <span className="brand-mark"><IconSparkle size={20} /></span>
+              <span className="brand-text">
+                <strong>{brand.name || 'Client Portal'}</strong>
+                <small>{brand.name ? 'Client Portal' : ''}</small>
+              </span>
+            </>
+          )}
         </div>
 
         {user && (

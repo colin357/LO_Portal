@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
-import { collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { toEmbedUrl } from '../lib/video'
 import { IconFile } from '../components/Icons'
+
+// Sort by the `order` field client-side. Doing the ordering here (instead of in
+// the Firestore query with orderBy) means the read only needs the `loId`
+// equality filter — no composite index to deploy, and docs that predate the
+// `order` field still show up instead of being silently dropped by the query.
+const byOrder = (items) =>
+  [...items].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
 
 function VideoCard({ video, done, onToggle }) {
   const embed = toEmbedUrl(video.url)
@@ -67,12 +74,12 @@ export default function Education() {
     if (!loId) { setLoading(false); return }
     const load = async () => {
       const [videoSnap, docSnap, loSnap] = await Promise.all([
-        getDocs(query(collection(db, 'videos'), where('loId', '==', loId), orderBy('order'))),
-        getDocs(query(collection(db, 'documents'), where('loId', '==', loId), orderBy('order'))),
+        getDocs(query(collection(db, 'videos'), where('loId', '==', loId))),
+        getDocs(query(collection(db, 'documents'), where('loId', '==', loId))),
         getDoc(doc(db, 'users', loId)),
       ])
-      setVideos(videoSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
-      setDocuments(docSnap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      setVideos(byOrder(videoSnap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+      setDocuments(byOrder(docSnap.docs.map((d) => ({ id: d.id, ...d.data() }))))
       if (loSnap.exists()) setLo(loSnap.data())
       setLoading(false)
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { renderTemplate, SAMPLE_AGENT } from '../lib/canvasRender'
@@ -65,8 +65,12 @@ export default function Templates() {
 
   useEffect(() => {
     if (!loId) { setLoading(false); return }
-    getDocs(query(collection(db, 'templates'), where('loId', '==', loId), orderBy('createdAt', 'desc')))
-      .then((snap) => setTemplates(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+    getDocs(query(collection(db, 'templates'), where('loId', '==', loId)))
+      .then((snap) => setTemplates(
+        snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
+      ))
       .finally(() => setLoading(false))
   }, [loId])
 

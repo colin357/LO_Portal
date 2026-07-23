@@ -79,6 +79,8 @@ a { color: var(--accent); }
 .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
 .brand-text strong { font-size: 0.98rem; letter-spacing: -0.01em; }
 .brand-text small { color: var(--muted); font-size: 0.76rem; }
+.brand-logo { max-width: 100%; max-height: 46px; width: auto; object-fit: contain; display: block; }
+.app-shell.collapsed .brand-logo { max-height: 34px; }
 
 .sidebar-user {
   display: flex; align-items: center; gap: 0.6rem;
@@ -363,6 +365,19 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   font-size: 0.8rem; text-align: center; padding: 0.5rem;
 }
 .file-btn { font-size: 0.85rem; }
+
+/* Portal logo preview (Admin → Branding). Checkered backdrop so transparent
+   PNGs are visible; the logo scales to fit without cropping. */
+.brand-logo-preview {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 96px; padding: 1rem; margin: 0.5rem 0 0.9rem;
+  border: 1px solid var(--border); border-radius: 12px;
+  background:
+    linear-gradient(45deg, #f1f5f9 25%, transparent 25%, transparent 75%, #f1f5f9 75%),
+    linear-gradient(45deg, #f1f5f9 25%, #fff 25%, #fff 75%, #f1f5f9 75%);
+  background-size: 16px 16px; background-position: 0 0, 8px 8px;
+}
+.brand-logo-preview img { max-width: 100%; max-height: 90px; object-fit: contain; }
 
 /* ============ Admin ============ */
 .tabs { display: flex; gap: 0.5rem; margin: 1.1rem 0; flex-wrap: wrap; }
