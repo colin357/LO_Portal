@@ -37,10 +37,11 @@ export default function CompleteProfile() {
         referralCode: code,
         headshotUrl: '',
         logoUrl: '',
+        onboarded: false,
         createdAt: serverTimestamp(),
       })
       await refreshProfile()
-      navigate('/')
+      navigate('/onboarding')
     } catch (err) {
       setError(err.message.replace('Firebase: ', ''))
     } finally {

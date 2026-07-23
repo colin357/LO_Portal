@@ -74,7 +74,6 @@ export default function Templates() {
 
   return (
     <div>
-      <h1>Marketing Templates</h1>
       <p className="muted">New templates are added every week. Smart templates are automatically personalized with your headshot, logo, and contact info.</p>
       {!profileComplete && (
         <div className="notice">
