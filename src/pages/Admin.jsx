@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  collection, query, where, orderBy, getDocs, addDoc, deleteDoc, doc,
+  collection, query, where, getDocs, addDoc, deleteDoc, doc,
   setDoc, getDoc, serverTimestamp,
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -8,7 +8,16 @@ import { db, storage } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import TemplateDesigner from '../components/TemplateDesigner'
 
-const TABS = ['Videos', 'Documents', 'Templates', 'Agents', 'Referral Code']
+const TABS = ['Branding', 'Videos', 'Documents', 'Templates', 'Agents', 'Referral Code']
+
+// Sort by the `order` field client-side so the Firestore reads only need a
+// `loId` equality filter (no composite index required).
+const byOrder = (items) =>
+  [...items].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+
+// Sort newest-first by createdAt (Firestore Timestamp) client-side.
+const byCreatedDesc = (items) =>
+  [...items].sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
 
 // Loan officer admin: manages their own content. The same building blocks are
 // reused by the super admin page with a different target loId.
@@ -27,11 +36,98 @@ export default function Admin() {
           </button>
         ))}
       </div>
+      {tab === 'Branding' && <AdminBranding loId={user.uid} />}
       {tab === 'Videos' && <AdminVideos loId={user.uid} />}
       {tab === 'Documents' && <AdminDocuments loId={user.uid} />}
       {tab === 'Templates' && <AdminTemplates loId={user.uid} />}
       {tab === 'Agents' && <AdminAgents loId={user.uid} />}
       {tab === 'Referral Code' && <AdminReferral loId={user.uid} />}
+    </div>
+  )
+}
+
+// Portal branding: the loan officer uploads a logo that replaces the generic
+// "Own It Social / Client Portal" mark in the top-left of the sidebar — for
+// the LO and for every agent linked to them.
+export function AdminBranding({ loId }) {
+  const { user, refreshProfile } = useAuth()
+  const [logoUrl, setLogoUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const isSelf = loId === user.uid
+
+  useEffect(() => {
+    getDoc(doc(db, 'users', loId)).then((snap) => {
+      if (snap.exists()) setLogoUrl(snap.data().portalLogoUrl || '')
+    })
+  }, [loId])
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBusy(true)
+    setError(null)
+    try {
+      // Storage rules allow a user to write under users/{their uid}. In the
+      // super-admin case the target LO isn't the signed-in user, so the file is
+      // stored under the uploader's uid while the Firestore doc records the URL.
+      const storageRef = ref(storage, `users/${user.uid}/portalLogo-${loId}`)
+      await uploadBytes(storageRef, file, { contentType: file.type })
+      const url = await getDownloadURL(storageRef)
+      await setDoc(doc(db, 'users', loId), { portalLogoUrl: url }, { merge: true })
+      setLogoUrl(url)
+      if (isSelf) await refreshProfile()
+    } catch (err) {
+      console.error('Failed to upload logo:', err)
+      setError(err)
+    } finally {
+      setBusy(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleRemove = async () => {
+    if (!confirm('Remove your portal logo?')) return
+    setBusy(true)
+    try {
+      await setDoc(doc(db, 'users', loId), { portalLogoUrl: '' }, { merge: true })
+      setLogoUrl('')
+      if (isSelf) await refreshProfile()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="narrow">
+      <form className="card form-card" onSubmit={(e) => e.preventDefault()}>
+        <h3>Portal logo</h3>
+        <p className="muted small-note">
+          This logo shows in the top-left of the portal for you and every agent linked to you.
+          Use a horizontal logo on a transparent or white background (PNG or SVG) for best results.
+        </p>
+        <div className="brand-logo-preview">
+          {logoUrl
+            ? <img src={logoUrl} alt="Portal logo" />
+            : <span className="muted">No logo uploaded yet</span>}
+        </div>
+        <label className="btn file-btn">
+          {busy ? 'Uploading…' : logoUrl ? 'Replace logo' : 'Upload logo'}
+          <input type="file" accept="image/*" hidden onChange={handleUpload} disabled={busy} />
+        </label>
+        {logoUrl && (
+          <button type="button" className="link-btn danger" onClick={handleRemove} disabled={busy}>
+            Remove logo
+          </button>
+        )}
+        {error && (
+          <p className="form-error">
+            {error.code === 'storage/unauthorized'
+              ? "Upload denied by Firebase Storage. Deploy storage.rules and confirm you're signed in, then try again."
+              : `Couldn't upload the logo: ${error.message || 'unknown error'}.`}
+          </p>
+        )}
+      </form>
     </div>
   )
 }
@@ -45,8 +141,8 @@ export function AdminVideos({ loId, broadcastLoIds = null }) {
   const [busy, setBusy] = useState(false)
 
   const load = async () => {
-    const snap = await getDocs(query(collection(db, 'videos'), where('loId', '==', loId), orderBy('order')))
-    setVideos(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const snap = await getDocs(query(collection(db, 'videos'), where('loId', '==', loId)))
+    setVideos(byOrder(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
   }
   useEffect(() => { load() }, [loId])
 
@@ -123,8 +219,8 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
   const [error, setError] = useState(null)
 
   const load = async () => {
-    const snap = await getDocs(query(collection(db, 'documents'), where('loId', '==', loId), orderBy('order')))
-    setDocuments(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const snap = await getDocs(query(collection(db, 'documents'), where('loId', '==', loId)))
+    setDocuments(byOrder(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
   }
   useEffect(() => { load() }, [loId])
 
@@ -229,8 +325,8 @@ export function AdminTemplates({ loId, broadcastLoIds = null }) {
   const [error, setError] = useState(null)
 
   const load = async () => {
-    const snap = await getDocs(query(collection(db, 'templates'), where('loId', '==', loId), orderBy('createdAt', 'desc')))
-    setTemplates(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    const snap = await getDocs(query(collection(db, 'templates'), where('loId', '==', loId)))
+    setTemplates(byCreatedDesc(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
   }
   useEffect(() => { load() }, [loId])
 

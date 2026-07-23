@@ -63,13 +63,11 @@ firebase deploy --only firestore:rules,storage
 
 ### 4. Composite indexes
 
-The videos and templates queries filter by `loId` and order results, which requires composite
-indexes. The first time you run the app, Firestore will log an error in the browser console with
-a **direct link to create the index** — click it for each of:
-
-- `videos`: `loId` (asc) + `order` (asc)
-- `documents`: `loId` (asc) + `order` (asc)
-- `templates`: `loId` (asc) + `createdAt` (desc)
+None required. The videos, documents, and templates lists query only by `loId` (a single-field
+equality filter Firestore indexes automatically) and sort client-side, so there's no composite
+index to create and nothing to configure here. (Earlier versions used `orderBy` in the query,
+which needed composite indexes — and silently returned an empty list until they were built,
+which is why uploaded documents sometimes didn't appear in Education.)
 
 ### 5. Allow canvas access to Storage images (required for smart templates)
 
@@ -139,14 +137,14 @@ If you host somewhere else, apply the same "rewrite all paths to /index.html" ru
 
 | Collection | Doc ID | Purpose |
 |---|---|---|
-| `users` | auth UID | Both LOs (`role: "lo"`) and agents (`role: "agent"`, with `loId` pointing at their LO). Agent branding fields: `headshotUrl`, `logoUrl`, `brandColor`, `tagline`, and `onboarded` (set to `false` at signup, `true` once the onboarding wizard is finished/skipped) |
+| `users` | auth UID | Both LOs (`role: "lo"`) and agents (`role: "agent"`, with `loId` pointing at their LO). Agent branding fields: `headshotUrl`, `logoUrl`, `brandColor`, `tagline`, and `onboarded` (set to `false` at signup, `true` once the onboarding wizard is finished/skipped). LO field `portalLogoUrl` — the logo shown in the top-left of the portal for that LO and all their agents (uploaded in Admin → Branding) |
 | `referralCodes` | the code (uppercase) | `{ loId }` — resolves a signup code to a loan officer |
 | `videos` | auto | `{ loId, title, description, url, order }` |
 | `documents` | auto | `{ loId, title, description, fileUrl, fileName, ext, order, createdAt }` — resource PDFs/handouts |
 | `templates` | auto | `{ loId, title, description, weekOf, fileUrl, previewUrl, createdAt }` |
 
-Storage paths: `users/{uid}/headshot`, `users/{uid}/logo`, `templates/{loUid}/...`,
-`documents/{loUid}/...`.
+Storage paths: `users/{uid}/headshot`, `users/{uid}/logo`, `users/{uid}/portalLogo-{loUid}`
+(LO portal logo), `templates/{loUid}/...`, `documents/{loUid}/...`.
 
 ## AI Assistant
 

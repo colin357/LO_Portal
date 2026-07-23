@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
-import { AdminVideos, AdminDocuments, AdminTemplates, AdminAgents, AdminReferral } from './Admin'
+import { AdminBranding, AdminVideos, AdminDocuments, AdminTemplates, AdminAgents, AdminReferral } from './Admin'
 
-const TABS = ['Videos', 'Documents', 'Templates', 'Agents', 'Referral Code']
+const TABS = ['Branding', 'Videos', 'Documents', 'Templates', 'Agents', 'Referral Code']
 
 // System-wide admin: pick any loan officer and manage their content, or
 // broadcast videos/templates to every loan officer at once.
@@ -91,6 +91,7 @@ export default function SuperAdmin() {
             ))}
           </div>
 
+          {selected && tab === 'Branding' && <AdminBranding loId={selected} />}
           {selected && tab === 'Videos' && <AdminVideos loId={selected} broadcastLoIds={loIds} />}
           {selected && tab === 'Documents' && <AdminDocuments loId={selected} broadcastLoIds={loIds} />}
           {selected && tab === 'Templates' && <AdminTemplates loId={selected} broadcastLoIds={loIds} />}
