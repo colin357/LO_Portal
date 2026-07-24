@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import TemplateDesigner from '../components/TemplateDesigner'
+import { makePdfPreviewBlob } from '../lib/pdfThumb'
 
 const TABS = ['Branding', 'Videos', 'Documents', 'Templates', 'Agents', 'Referral Code']
 
@@ -234,6 +235,20 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
       await uploadBytes(storageRef, file, { contentType: file.type || 'application/octet-stream' })
       const fileUrl = await getDownloadURL(storageRef)
       const ext = (file.name.split('.').pop() || '').toUpperCase()
+
+      // Generate a first-page preview from the local file (no CORS needed) and
+      // store it so cards show a thumbnail regardless of bucket CORS settings.
+      let previewUrl = ''
+      const isPdf = ext === 'PDF' || (file.type || '').includes('pdf')
+      if (isPdf) {
+        const previewBlob = await makePdfPreviewBlob(file)
+        if (previewBlob) {
+          const previewRef = ref(storage, `documents/${user.uid}/${stamp}-preview.png`)
+          await uploadBytes(previewRef, previewBlob, { contentType: 'image/png' })
+          previewUrl = await getDownloadURL(previewRef)
+        }
+      }
+
       const targets = broadcast && broadcastLoIds?.length ? broadcastLoIds : [loId]
       for (const target of targets) {
         await addDoc(collection(db, 'documents'), {
@@ -243,6 +258,7 @@ export function AdminDocuments({ loId, broadcastLoIds = null }) {
           fileUrl,
           fileName: file.name,
           ext,
+          previewUrl,
           order: target === loId ? documents.length : Date.now(),
           createdAt: serverTimestamp(),
         })

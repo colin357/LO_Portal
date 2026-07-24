@@ -341,15 +341,22 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* PDF preview thumbnail (top of each document card) */
 .doc-thumb {
-  display: flex; align-items: flex-start; justify-content: center;
+  display: flex; align-items: stretch; justify-content: center;
   width: 100%; height: 190px; padding: 0; overflow: hidden;
   border: 1px solid var(--border); border-radius: 12px; background: #f8fafc;
   cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s;
 }
 .doc-thumb:not(:disabled):hover { border-color: var(--purple); box-shadow: var(--shadow-sm); }
-.doc-thumb:disabled { cursor: default; align-items: center; }
+.doc-thumb:disabled { cursor: default; }
 .doc-thumb-img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-.doc-thumb-fallback { color: var(--purple); display: flex; align-items: center; justify-content: center; }
+.doc-thumb-fallback {
+  width: 100%; height: 100%; color: var(--purple);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.doc-thumb-badge {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted);
+  background: #f3e8ff; border-radius: 999px; padding: 0.1rem 0.55rem;
+}
 .doc-thumb-skeleton {
   width: 100%; height: 100%;
   background: linear-gradient(100deg, #f1f5f9 30%, #e9edf3 50%, #f1f5f9 70%);

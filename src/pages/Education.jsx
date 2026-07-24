@@ -6,8 +6,18 @@ import { toEmbedUrl } from '../lib/video'
 import { IconFile } from '../components/Icons'
 import { renderPdfThumbnail } from '../lib/pdfThumb'
 
-// Renders a small first-page preview of a PDF; falls back to a document icon
-// if the file can't be rendered (e.g. Storage CORS not configured).
+function ThumbFallback() {
+  return (
+    <span className="doc-thumb-fallback">
+      <IconFile size={40} />
+      <span className="doc-thumb-badge">PDF</span>
+    </span>
+  )
+}
+
+// Live-renders a first-page preview from the file URL — only used for older
+// documents that have no stored preview. Needs Storage CORS; falls back to an
+// icon otherwise.
 function PdfThumbnail({ url }) {
   const [src, setSrc] = useState('')
   const [failed, setFailed] = useState(false)
@@ -21,7 +31,7 @@ function PdfThumbnail({ url }) {
     return () => { active = false }
   }, [url])
 
-  if (failed) return <span className="doc-thumb-fallback"><IconFile size={40} /></span>
+  if (failed) return <ThumbFallback />
   if (!src) return <span className="doc-thumb-skeleton" aria-hidden="true" />
   return <img className="doc-thumb-img" src={src} alt="" />
 }
@@ -105,9 +115,11 @@ function DocumentCard({ document, onView }) {
         disabled={!isPdf}
         title={isPdf ? 'View document' : undefined}
       >
-        {isPdf
-          ? <PdfThumbnail url={document.fileUrl} />
-          : <span className="doc-thumb-fallback"><IconFile size={40} /></span>}
+        {document.previewUrl
+          ? <img className="doc-thumb-img" src={document.previewUrl} alt="" />
+          : isPdf
+            ? <PdfThumbnail url={document.fileUrl} />
+            : <ThumbFallback />}
       </button>
       <div className="doc-body">
         <h3>{document.title}</h3>
