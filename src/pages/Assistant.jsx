@@ -4,7 +4,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { askAssistant, SUGGESTED_QUESTIONS } from '../lib/assistant'
-import { IconSparkle, IconSend, IconVideo, IconFile } from '../components/Icons'
+import { IconSend, IconVideo, IconFile } from '../components/Icons'
 
 function ResourceLink({ resource }) {
   const isVideo = resource.type === 'video'
@@ -29,7 +29,7 @@ function Message({ message }) {
   }
   return (
     <div className="chat-row bot">
-      <span className="chat-avatar"><IconSparkle size={16} /></span>
+      <span className="chat-avatar" role="img" aria-label="AI assistant">🧑‍💻</span>
       <div className="chat-bubble bot">
         {message.text.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}
         {message.resources?.length > 0 && (
@@ -110,7 +110,7 @@ export default function Assistant() {
         {messages.map((m, i) => <Message key={i} message={m} />)}
         {busy && (
           <div className="chat-row bot">
-            <span className="chat-avatar"><IconSparkle size={16} /></span>
+            <span className="chat-avatar" role="img" aria-label="AI assistant">🧑‍💻</span>
             <div className="chat-bubble bot typing"><span></span><span></span><span></span></div>
           </div>
         )}
