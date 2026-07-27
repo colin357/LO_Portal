@@ -70,6 +70,22 @@ export default function TemplateDesigner({ loId, broadcastLoIds = null, onSaved 
     setSelected(-1)
   }
 
+  const moveLayer = (index, direction) => {
+    const target = index + direction
+    if (target < 0 || target >= template.layers.length) return
+    const layers = [...template.layers]
+    ;[layers[index], layers[target]] = [layers[target], layers[index]]
+    setTemplate({ ...template, layers })
+    setSelected(target)
+  }
+
+  const layerLabel = (layer, index) => {
+    if (layer.type === 'headshot') return 'Headshot'
+    if (layer.type === 'logo') return 'Logo'
+    const field = TEXT_FIELDS.find((f) => f.key === layer.field)
+    return field ? field.label : 'Text'
+  }
+
   // Map a mouse event to template-space coordinates.
   const canvasPoint = (e) => {
     const rect = canvasRef.current.getBoundingClientRect()
@@ -178,6 +194,26 @@ export default function TemplateDesigner({ loId, broadcastLoIds = null, onSaved 
             onMouseLeave={handleMouseUp}
           />
           <p className="muted small-note">Click a layer to select it, drag to reposition. Shown with sample agent data.</p>
+
+          {template.layers.length > 0 && (
+            <div className="layer-list">
+              <strong className="layer-list-heading">Layers</strong>
+              <ul>
+                {template.layers.map((layer, i) => (
+                  <li key={i} className={`layer-list-item${i === selected ? ' active' : ''}`} onClick={() => setSelected(i)}>
+                    <span className={`layer-type-badge ${layer.type}`}>{layer.type === 'text' ? 'T' : layer.type === 'headshot' ? 'H' : 'L'}</span>
+                    <span className="layer-list-label">{layerLabel(layer, i)}</span>
+                    <span className="layer-list-actions">
+                      <button type="button" title="Move up (behind)" disabled={i === 0} onClick={(e) => { e.stopPropagation(); moveLayer(i, -1) }}>&#x2191;</button>
+                      <button type="button" title="Move down (in front)" disabled={i === template.layers.length - 1} onClick={(e) => { e.stopPropagation(); moveLayer(i, 1) }}>&#x2193;</button>
+                      <button type="button" title="Delete layer" className="danger" onClick={(e) => { e.stopPropagation(); removeLayer(i) }}>&times;</button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted small-note" style={{ margin: '0.35rem 0 0' }}>Layers render top-to-bottom. Bottom = in front.</p>
+            </div>
+          )}
 
           {sel && (
             <div className="layer-editor">

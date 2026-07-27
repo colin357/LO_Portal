@@ -506,6 +506,35 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   margin: 0.75rem 0 0; padding: 0.6rem 0.8rem; font-size: 0.85rem;
   color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
 }
+/* Layer list panel */
+.layer-list { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; margin-bottom: 0.75rem; max-width: 640px; }
+.layer-list-heading { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; }
+.layer-list ul { list-style: none; margin: 0; padding: 0; }
+.layer-list-item {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.55rem;
+  border-radius: 6px; cursor: pointer; transition: background 0.12s;
+}
+.layer-list-item:hover { background: var(--hover, rgba(0,0,0,0.04)); }
+.layer-list-item.active { background: #2563eb14; outline: 2px solid #2563eb; outline-offset: -2px; }
+.layer-type-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 5px; font-size: 0.75rem; font-weight: 700;
+  flex-shrink: 0; color: #fff;
+}
+.layer-type-badge.headshot { background: #7c3aed; }
+.layer-type-badge.logo { background: #0891b2; }
+.layer-type-badge.text { background: #d97706; }
+.layer-list-label { flex: 1; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layer-list-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
+.layer-list-actions button {
+  background: none; border: 1px solid var(--border); border-radius: 4px; width: 26px; height: 26px;
+  cursor: pointer; font-size: 0.85rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+  color: var(--text, inherit); transition: background 0.12s;
+}
+.layer-list-actions button:hover:not(:disabled) { background: var(--hover, rgba(0,0,0,0.06)); }
+.layer-list-actions button:disabled { opacity: 0.3; cursor: default; }
+.layer-list-actions button.danger:hover:not(:disabled) { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
 .layer-editor { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; margin-bottom: 1rem; }
 .layer-fields { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-top: 0.5rem; }
 .layer-fields label { margin-bottom: 0; flex: 0 0 auto; min-width: 90px; }
