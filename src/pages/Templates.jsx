@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { renderTemplate, SAMPLE_AGENT } from '../lib/canvasRender'
 
 // A smart template rendered with the viewer's own profile data.
-function SmartTemplateCard({ template, agent }) {
+function SmartTemplateCard({ template, agent, sample = false }) {
   const [previewUrl, setPreviewUrl] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -51,7 +51,7 @@ function SmartTemplateCard({ template, agent }) {
         ? <img className="template-preview" src={previewUrl} alt={template.title} />
         : <div className="template-preview loading-box">{error || 'Generating preview…'}</div>}
       <h3>{template.title}</h3>
-      <p className="pill">Personalized for you</p>
+      <p className="pill">{sample ? 'Sample data' : 'Personalized for you'}</p>
       {template.weekOf && <p className="pill">Week of {template.weekOf}</p>}
       {template.description && <p className="muted">{template.description}</p>}
       <button className="btn" onClick={handleDownload} disabled={busy}>
@@ -68,9 +68,16 @@ export default function Templates() {
 
   const isLO = profile?.role === 'lo'
   const loId = isLO ? profile.id : profile?.loId
-  const profileComplete = isLO || (profile?.headshotUrl && profile?.logoUrl)
-  // LOs preview smart templates with sample data; agents see their own branding.
-  const renderData = isLO ? SAMPLE_AGENT : profile
+  const profileComplete = profile?.headshotUrl && profile?.logoUrl
+  // Everyone renders with their own branding. Sample data is only a stand-in
+  // for a brand-new LO who hasn't filled in a profile yet, so the templates
+  // they design still preview against something representative — never for
+  // someone who has their own details to draw.
+  const hasOwnBranding = Boolean(
+    profile?.name || profile?.headshotUrl || profile?.logoUrl || profile?.phone || profile?.email
+  )
+  const usingSample = isLO && !hasOwnBranding
+  const renderData = usingSample ? SAMPLE_AGENT : profile
 
   useEffect(() => {
     if (!loId) { setLoading(false); return }
@@ -100,7 +107,7 @@ export default function Templates() {
       <div className="template-grid">
         {templates.map((t) =>
           t.kind === 'design' ? (
-            <SmartTemplateCard key={t.id} template={t} agent={renderData} />
+            <SmartTemplateCard key={t.id} template={t} agent={renderData} sample={usingSample} />
           ) : (
             <div className="card" key={t.id}>
               {t.previewUrl && <img className="template-preview" src={t.previewUrl} alt={t.title} />}
