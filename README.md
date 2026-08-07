@@ -69,16 +69,26 @@ index to create and nothing to configure here. (Earlier versions used `orderBy` 
 which needed composite indexes — and silently returned an empty list until they were built,
 which is why uploaded documents sometimes didn't appear in Education.)
 
-### 5. Allow canvas access to Storage images (required for smart templates)
+### 5. Allow canvas access to Storage images (optional, recommended)
 
-Smart templates draw Firebase-hosted images onto an HTML canvas, which requires CORS to be
-enabled on the Storage bucket (otherwise the browser blocks the PNG export). Run once with
-the [gsutil CLI](https://cloud.google.com/storage/docs/gsutil_install) — replace the bucket
-name with the `storageBucket` value from your Firebase config:
+Smart templates draw Firebase-hosted images onto an HTML canvas. Loading a Storage URL
+straight into an `<img>` only works when the bucket sends CORS headers; without them the
+browser blocks the load and the PNG export fails ("Preview unavailable").
+
+This no longer has to be configured: when a direct load fails, the app retries through
+`api/image.js`, a same-origin proxy that streams the image back from the same deploy, so the
+canvas is never tainted. Enabling CORS is still worth doing — it skips the extra hop, so
+previews render faster. Run once with the
+[gsutil CLI](https://cloud.google.com/storage/docs/gsutil_install) — replace the bucket name
+with the `storageBucket` value from your Firebase config:
 
 ```bash
 gsutil cors set cors.json gs://YOUR-PROJECT.appspot.com
 ```
+
+The proxy only accepts Google/Firebase Storage hostnames over HTTPS, so it can't be pointed
+at arbitrary URLs. `vite dev` doesn't run the `api/` functions, so the dev server mounts the
+same handler itself (see `devImageProxy` in `vite.config.js`).
 
 ### 6. Create the loan officer account
 
@@ -152,9 +162,9 @@ Storage paths: `users/{uid}/headshot`, `users/{uid}/headshot-original`,
 `users/{uid}/logo`, `users/{uid}/logo-original`, `users/{uid}/portalLogo-{loUid}`
 (LO portal logo), `templates/{loUid}/...`, `documents/{loUid}/...`.
 
-> Re-cropping an existing image redraws it onto a canvas, so the Storage bucket
-> needs CORS enabled (the same `gsutil cors set cors.json` step already required
-> for smart templates). A fresh upload crops the local file and needs no CORS.
+> Re-cropping an existing image redraws it onto a canvas, so it reads the stored
+> image back — via bucket CORS if configured, otherwise through the `/api/image`
+> proxy. A fresh upload crops the local file and needs neither.
 
 ## AI Assistant
 

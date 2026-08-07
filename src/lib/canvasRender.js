@@ -5,6 +5,8 @@
 // profile (or fixed text). The same spec is used by the admin designer (with
 // sample data) and the agent-facing download (with their real profile).
 
+import { loadImage } from './loadImage'
+
 export const TEXT_FIELDS = [
   { key: 'name', label: 'Agent name' },
   { key: 'phone', label: 'Phone' },
@@ -48,16 +50,6 @@ export function defaultLayer(type, template) {
     bold: true,
     align: 'left',
   }
-}
-
-function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`Could not load image: ${url}`))
-    img.src = url
-  })
 }
 
 // Draw an image into a box using cover-fit (fills the box, crops overflow).

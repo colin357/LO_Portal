@@ -23,12 +23,21 @@ function SmartTemplateCard({ template, agent }) {
   const handleDownload = async () => {
     setBusy(true)
     try {
-      const canvas = document.createElement('canvas')
-      await renderTemplate(template, agent, canvas)
+      // Reuse the preview bytes when we have them; otherwise render on demand
+      // so a failed preview doesn't also block the download.
+      let href = previewUrl
+      if (!href) {
+        const canvas = document.createElement('canvas')
+        await renderTemplate(template, agent, canvas)
+        href = canvas.toDataURL('image/png')
+      }
       const a = document.createElement('a')
-      a.href = canvas.toDataURL('image/png')
-      a.download = `${template.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'template'}.png`
+      a.href = href
+      a.download = `${(template.title || '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'template'}.png`
+      document.body.appendChild(a)
       a.click()
+      a.remove()
+      setError('')
     } catch {
       setError('Could not generate the image. Try again in a moment.')
     } finally {
@@ -45,7 +54,7 @@ function SmartTemplateCard({ template, agent }) {
       <p className="pill">Personalized for you</p>
       {template.weekOf && <p className="pill">Week of {template.weekOf}</p>}
       {template.description && <p className="muted">{template.description}</p>}
-      <button className="btn" onClick={handleDownload} disabled={busy || !previewUrl}>
+      <button className="btn" onClick={handleDownload} disabled={busy}>
         {busy ? 'Generating…' : 'Download PNG'}
       </button>
     </div>

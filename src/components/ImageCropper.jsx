@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { loadImage } from '../lib/loadImage'
 
 // A dependency-free crop / zoom / pan editor. Given an image source (a File
 // object URL or a remote URL), the user drags to reposition and uses the slider
 // to zoom; on save we render the visible crop frame to a canvas and hand back a
-// PNG Blob (PNG so logo transparency survives). Remote URLs are loaded with
-// crossOrigin so the canvas isn't tainted — this needs CORS on the Storage
-// bucket, which the smart-template feature already requires (see README).
+// PNG Blob (PNG so logo transparency survives). Remote URLs go through the
+// shared loader, which keeps the canvas exportable whether or not the Storage
+// bucket has CORS configured (see src/lib/loadImage.js).
 
 const VIEWPORT = 300 // px — the long edge of the crop frame on screen
 const OUT_MAX = 768 // px — the long edge of the exported image
@@ -31,14 +32,17 @@ export default function ImageCropper({ src, presets, title = 'Adjust crop', onCa
     return { vw: Math.round(VIEWPORT * aspect), vh: VIEWPORT }
   }, [aspect])
 
-  // Load the source image (crossOrigin for remote URLs so export won't taint).
+  // Load the source image in an export-safe way (see loadImage).
   useEffect(() => {
-    const img = new Image()
-    if (/^https?:/i.test(src)) img.crossOrigin = 'anonymous'
-    img.onload = () => { imgRef.current = img; setNat({ w: img.naturalWidth, h: img.naturalHeight }) }
-    img.onerror = () => setError('Could not load this image.')
-    img.src = src
-    return () => { img.onload = null; img.onerror = null }
+    let cancelled = false
+    loadImage(src)
+      .then((img) => {
+        if (cancelled) return
+        imgRef.current = img
+        setNat({ w: img.naturalWidth, h: img.naturalHeight })
+      })
+      .catch(() => { if (!cancelled) setError('Could not load this image.') })
+    return () => { cancelled = true }
   }, [src])
 
   const baseScale = nat ? Math.max(vw / nat.w, vh / nat.h) : 1
