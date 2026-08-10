@@ -17,6 +17,71 @@ export const TEXT_FIELDS = [
   { key: 'custom', label: 'Fixed text' },
 ]
 
+// Fonts offered for text layers. `stack` is what we hand to the canvas; the
+// Google-hosted families are fetched on demand (see ensureFonts) so both the
+// designer preview and the agent-side render use the real typeface.
+export const FONTS = [
+  { key: 'system', label: 'System sans', stack: 'system-ui, -apple-system, sans-serif' },
+  { key: 'inter', label: 'Inter', stack: '"Inter", system-ui, sans-serif', google: 'Inter' },
+  { key: 'montserrat', label: 'Montserrat', stack: '"Montserrat", system-ui, sans-serif', google: 'Montserrat' },
+  { key: 'poppins', label: 'Poppins', stack: '"Poppins", system-ui, sans-serif', google: 'Poppins' },
+  { key: 'oswald', label: 'Oswald (condensed)', stack: '"Oswald", "Arial Narrow", sans-serif', google: 'Oswald' },
+  { key: 'bebas', label: 'Bebas Neue (display)', stack: '"Bebas Neue", Impact, sans-serif', google: 'Bebas Neue' },
+  { key: 'playfair', label: 'Playfair Display (serif)', stack: '"Playfair Display", Georgia, serif', google: 'Playfair Display' },
+  { key: 'lora', label: 'Lora (serif)', stack: '"Lora", Georgia, serif', google: 'Lora' },
+  { key: 'georgia', label: 'Georgia (serif)', stack: 'Georgia, "Times New Roman", serif' },
+  { key: 'courier', label: 'Courier (mono)', stack: '"Courier New", Courier, monospace' },
+  { key: 'dancing', label: 'Dancing Script (script)', stack: '"Dancing Script", cursive', google: 'Dancing Script' },
+]
+
+export const DEFAULT_FONT = 'system'
+
+export function fontStack(key) {
+  return (FONTS.find((f) => f.key === key) || FONTS[0]).stack
+}
+
+// Google fonts we've already asked the browser to fetch, so repeated renders
+// don't pile up <link> tags.
+const requestedFonts = new Set()
+
+function requestGoogleFont(family) {
+  if (typeof document === 'undefined' || requestedFonts.has(family)) return
+  requestedFonts.add(family)
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, '+')}:wght@400;700&display=swap`
+  document.head.appendChild(link)
+}
+
+// Fetch every optional family up front — used by the designer so the font
+// dropdown previews each option in its own typeface.
+export function preloadAllFonts() {
+  for (const font of FONTS) {
+    if (font.google) requestGoogleFont(font.google)
+  }
+}
+
+/**
+ * Make sure every font used by the template's text layers is loaded before we
+ * draw. Canvas silently falls back to a default face if the font isn't ready,
+ * so this has to happen up front.
+ */
+export async function ensureFonts(template) {
+  if (typeof document === 'undefined' || !document.fonts) return
+  const jobs = []
+  for (const layer of template?.layers || []) {
+    if (layer.type !== 'text') continue
+    const font = FONTS.find((f) => f.key === (layer.fontFamily || DEFAULT_FONT))
+    if (!font?.google) continue
+    requestGoogleFont(font.google)
+    const size = layer.fontSize || 32
+    for (const weight of ['400', '700']) {
+      jobs.push(document.fonts.load(`${weight} ${size}px "${font.google}"`).catch(() => {}))
+    }
+  }
+  if (jobs.length) await Promise.all(jobs)
+}
+
 export const SAMPLE_AGENT = {
   name: 'Sam Agent',
   phone: '(555) 123-4567',
@@ -46,6 +111,7 @@ export function defaultLayer(type, template) {
     w: Math.round(w * 0.5),
     h: 60,
     fontSize: Math.max(24, Math.round(h * 0.045)),
+    fontFamily: DEFAULT_FONT,
     color: '#ffffff',
     bold: true,
     align: 'left',
@@ -103,9 +169,10 @@ function drawText(ctx, layer, agent) {
   ctx.textAlign = layer.align || 'left'
   let size = layer.fontSize || 32
   const weight = layer.bold ? '700' : '400'
+  const family = fontStack(layer.fontFamily || DEFAULT_FONT)
   // Shrink to fit the box width.
   do {
-    ctx.font = `${weight} ${size}px system-ui, -apple-system, sans-serif`
+    ctx.font = `${weight} ${size}px ${family}`
     if (ctx.measureText(text).width <= layer.w || size <= 10) break
     size -= 1
   } while (size > 10)
@@ -125,6 +192,8 @@ export async function renderTemplate(template, agent, canvas, bgImage = null) {
   canvas.width = template.width
   canvas.height = template.height
   const ctx = canvas.getContext('2d')
+
+  await ensureFonts(template)
 
   const bg = bgImage || (await loadImage(template.bgUrl))
   ctx.drawImage(bg, 0, 0, template.width, template.height)

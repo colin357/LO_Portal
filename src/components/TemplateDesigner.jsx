@@ -3,7 +3,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { renderTemplate, defaultLayer, TEXT_FIELDS, SAMPLE_AGENT } from '../lib/canvasRender'
+import { renderTemplate, defaultLayer, TEXT_FIELDS, FONTS, DEFAULT_FONT, fontStack, preloadAllFonts, SAMPLE_AGENT } from '../lib/canvasRender'
 
 // Visual designer for "smart" templates: upload a background image, then
 // position headshot / logo / text layers on it. Agents get the same layout
@@ -21,6 +21,10 @@ export default function TemplateDesigner({ loId, broadcastLoIds = null, onSaved 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const dragRef = useRef(null)
+
+  // Pull in the optional web fonts so both the canvas and the font picker can
+  // show them without a flash of fallback type.
+  useEffect(() => { preloadAllFonts() }, [])
 
   const handleBgChange = (e) => {
     const file = e.target.files?.[0]
@@ -231,6 +235,17 @@ export default function TemplateDesigner({ loId, broadcastLoIds = null, onSaved 
                         <input value={sel.text} onChange={(e) => updateLayer(selected, { text: e.target.value })} />
                       </label>
                     )}
+                    <label>Font
+                      <select
+                        value={sel.fontFamily || DEFAULT_FONT}
+                        style={{ fontFamily: fontStack(sel.fontFamily || DEFAULT_FONT) }}
+                        onChange={(e) => updateLayer(selected, { fontFamily: e.target.value })}
+                      >
+                        {FONTS.map((f) => (
+                          <option key={f.key} value={f.key} style={{ fontFamily: f.stack }}>{f.label}</option>
+                        ))}
+                      </select>
+                    </label>
                     <label>Font size
                       <input type="number" min="10" value={sel.fontSize} onChange={(e) => updateLayer(selected, { fontSize: Number(e.target.value) })} />
                     </label>
